@@ -1,14 +1,16 @@
 import streamlit as st
 import requests
 
+# Page configuration
 st.set_page_config(page_title="Gemini Chatbot", layout="centered")
 
-# Load API key from Streamlit secrets
+# Load Gemini API key from Streamlit secrets
 api_key = st.secrets["GEMINI_API_KEY"]
 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
+# Title and description
 st.title("💬 Gemini Chatbot")
-st.markdown("Ask anything and get smart responses from Gemini 2.0 Flash!")
+st.markdown("Chat with **Gemini 2.0 Flash**. Ask anything!")
 
 # Initialize chat history
 if "chat_history" not in st.session_state:
@@ -16,21 +18,24 @@ if "chat_history" not in st.session_state:
         {"role": "system", "content": "You are a helpful but simple chatbot."}
     ]
 
-# Display past messages
+# Show past conversation (excluding system messages)
 for msg in st.session_state.chat_history:
-    if msg["role"] != "system":
+    if msg["role"] in {"user", "assistant"}:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-# Input box for user message
+# Chat input
 user_input = st.chat_input("Type your message...")
+
 if user_input:
-    # Add user message to chat history
+    # Save user input to chat history
     st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+    # Display user message
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Prepare full history for Gemini
+    # Prepare request content, excluding "system" role
     data = {
         "contents": [
             {
@@ -38,10 +43,12 @@ if user_input:
                 "parts": [{"text": msg["content"]}]
             }
             for msg in st.session_state.chat_history
-            if msg["role"] != "system"  # ✅ Don't send system messages
+            if msg["role"] in {"user", "assistant"}
         ]
     }
 
+    try:
+        # Make request to Gemini API
         response = requests.post(
             url,
             headers={"Content-Type": "application/json"},
@@ -57,7 +64,7 @@ if user_input:
     except Exception as e:
         reply = f"❌ Unexpected error: {e}"
 
-    # Add bot reply to chat
+    # Display bot reply and save to history
     st.session_state.chat_history.append({"role": "assistant", "content": reply})
     with st.chat_message("assistant"):
         st.markdown(reply)

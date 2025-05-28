@@ -36,11 +36,12 @@ if user_input:
             {
                 "role": msg["role"],
                 "parts": [{"text": msg["content"]}]
-            } for msg in st.session_state.chat_history
+            }
+            for msg in st.session_state.chat_history
+            if msg["role"] != "system"  # ✅ Don't send system messages
         ]
     }
 
-    try:
         response = requests.post(
             url,
             headers={"Content-Type": "application/json"},
